@@ -3,6 +3,8 @@ name = "finland-energy-mcp"
 version = "0.1.0"
 description = "MCP server for Finnish electricity prices: what a household really pays, and when to use power"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",  # HTTP client for the price APIs (like java.net.http.HttpClient)
