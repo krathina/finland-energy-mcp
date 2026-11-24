@@ -68,7 +68,8 @@ async def test_every_answer_states_its_assumptions(client: Client) -> None:
     assert a["source"] == "fake source"
     assert a["vat_percent"] == 25.5
     assert a["margin_c_per_kwh"] == 0.49 and a["transfer_c_per_kwh"] == 3.5
-    assert "FINLAND_ENERGY_" in a["note"]  # tells the user how to set their own contract
+    assert a["contract_from"] == "example defaults"
+    assert "ask the user" in a["note"]  # the AI is told to get the user's real values
 
 
 # --- get_prices ------------------------------------------------------------------------

@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+ContractFrom = Literal["user", "user (partly example defaults)", "example defaults"]
+
 
 class Assumptions(BaseModel):
     """What the numbers are based on, so the answer can be explained honestly."""
@@ -16,6 +18,9 @@ class Assumptions(BaseModel):
     source: str = Field(description="Where the market prices came from")
     margin_c_per_kwh: float = Field(description="Retailer margin assumed, c/kWh incl. VAT")
     transfer_c_per_kwh: float = Field(description="Network transfer fee assumed, c/kWh incl. VAT")
+    contract_from: ContractFrom = Field(
+        description="Whether margin and transfer fee came from the user or are example defaults"
+    )
     vat_percent: float
     electricity_tax_c_per_kwh: float = Field(description="Household electricity tax incl. VAT")
     note: str

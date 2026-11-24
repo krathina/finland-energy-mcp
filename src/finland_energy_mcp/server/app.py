@@ -23,10 +23,11 @@ from finland_energy_mcp.core.pricing import (
     breakdown_series,
     finnish_date,
 )
-from finland_energy_mcp.core.tariff import electricity_tax_c_per_kwh, vat_rate
+from finland_energy_mcp.core.tariff import SpotContract, electricity_tax_c_per_kwh, vat_rate
 from finland_energy_mcp.server.schemas import (
     Assumptions,
     CheapestTime,
+    ContractFrom,
     DayPrices,
     DayRange,
     DaySummary,
@@ -43,8 +44,31 @@ INSTRUCTIONS = (
     "Finnish household electricity prices (spot contracts). Prices are what a household pays "
     "per kWh including VAT: spot price + retailer margin + transfer fee + electricity tax. "
     "Times are Finnish local time. Tomorrow's prices are published around 14:00 Finnish time. "
-    "Always mention the assumed margin and transfer fee when giving prices."
+    "Margin and transfer fee differ per household. If the user has not told you theirs, answer "
+    "with the example defaults, say clearly that they are assumed, and offer to recalculate with "
+    "the user's own values. Once the user gives them, pass them as margin_c_per_kwh and "
+    "transfer_c_per_kwh in this and every later call. No configuration, environment variable or "
+    "restart is needed for that."
 )
+MarginParam = Annotated[
+    float | None,
+    Field(
+        ge=0,
+        le=50,
+        description="The user's retailer margin in c/kWh incl. VAT, from their contract. Only "
+        "if the user has told you; omit to use the example default. Reuse it in later calls.",
+    ),
+]
+TransferParam = Annotated[
+    float | None,
+    Field(
+        ge=0,
+        le=50,
+        description="The user's network transfer fee (siirtomaksu) in c/kWh incl. VAT, from "
+        "their network company. Only if the user has told you; omit to use the example default. "
+        "Reuse it in later calls.",
+    ),
+]
 _READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=True)  # reads an external API
 _CENT = Decimal("0.01")
 
@@ -67,34 +91,60 @@ def build_server(
         instructions=INSTRUCTIONS,
     )
 
-    def household_prices() -> list[PriceBreakdown]:
+    def household_prices(contract: SpotContract) -> list[PriceBreakdown]:
         try:
             series = source.latest_prices()
         except PriceSourceError as error:
             raise ToolError(f"Could not get prices from {source.name}: {error}") from error
-        return breakdown_series(series, settings.contract, vat_on_negative=settings.vat_on_negative)
+        return breakdown_series(series, contract, vat_on_negative=settings.vat_on_negative)
 
-    def assumptions(day: date) -> Assumptions:
+    def assumptions(day: date, contract: SpotContract, contract_from: ContractFrom) -> Assumptions:
+        if contract_from == "user":
+            note = "Prices include VAT and use the margin and transfer fee the user gave."
+        else:
+            note = (
+                "Prices include VAT. The margin and/or transfer fee are example values: ask the "
+                "user for theirs (margin: their electricity contract; transfer fee: their network "
+                "company's price list), then call this tool again with margin_c_per_kwh and "
+                "transfer_c_per_kwh. No configuration or restart is needed."
+            )
         return Assumptions(
             source=source.name,
-            margin_c_per_kwh=_r(settings.margin_c_per_kwh),
-            transfer_c_per_kwh=_r(settings.transfer_c_per_kwh),
+            margin_c_per_kwh=_r(contract.margin_c_per_kwh),
+            transfer_c_per_kwh=_r(contract.transfer_c_per_kwh),
+            contract_from=contract_from,
             vat_percent=float(vat_rate(day) * 100),
             electricity_tax_c_per_kwh=_r(electricity_tax_c_per_kwh(day)),
-            note=(
-                "Prices include VAT. Margin and transfer fee are assumptions; set your own with "
-                "the FINLAND_ENERGY_MARGIN_C_PER_KWH and FINLAND_ENERGY_TRANSFER_C_PER_KWH "
-                "environment variables."
-            ),
+            note=note,
         )
 
+    def contract_for(
+        margin: float | None, transfer: float | None
+    ) -> tuple[SpotContract, ContractFrom]:
+        """The contract for one call: the user's values where given, the settings otherwise."""
+        given = [v is not None for v in (margin, transfer)]
+        contract = SpotContract(
+            margin_c_per_kwh=settings.margin_c_per_kwh if margin is None else _dec(margin),
+            transfer_c_per_kwh=settings.transfer_c_per_kwh if transfer is None else _dec(transfer),
+            monthly_fees_eur=Decimal(0),
+        )
+        if all(given):
+            return contract, "user"
+        if any(given):
+            return contract, "user (partly example defaults)"
+        return contract, "example defaults"
+
     @server.tool(annotations=_READ_ONLY)
-    def get_price_now() -> PriceNow:
+    def get_price_now(
+        margin_c_per_kwh: MarginParam = None,
+        transfer_c_per_kwh: TransferParam = None,
+    ) -> PriceNow:
         """The household electricity price right now (current 15-minute period), split into
         spot price, margin, transfer fee and tax, with today's lowest, highest and average price
         for context. Use for questions like "how much is electricity now?" or "is it cheap now?"."""
+        contract, contract_from = contract_for(margin_c_per_kwh, transfer_c_per_kwh)
         now = clock()
-        prices = household_prices()
+        prices = household_prices(contract)
         current = next((p for p in prices if p.start <= now < p.end), None)
         if current is None:
             raise ToolError(f"{source.name} has no price for the current moment.")
@@ -113,7 +163,7 @@ def build_server(
             today_c_per_kwh=DayRange(
                 min=_r(min(totals)), max=_r(max(totals)), average=_r(_mean(totals))
             ),
-            assumptions=assumptions(finnish_date(now)),
+            assumptions=assumptions(finnish_date(now), contract, contract_from),
         )
 
     @server.tool(annotations=_READ_ONLY)
@@ -126,12 +176,15 @@ def build_server(
             Literal["hour", "15min"],
             Field(description="'hour' (24 rows, easier to read) or '15min' (the market's own)"),
         ] = "hour",
+        margin_c_per_kwh: MarginParam = None,
+        transfer_c_per_kwh: TransferParam = None,
     ) -> DayPrices:
         """Household electricity prices for today or tomorrow, per hour or per 15 minutes, with
         the day's cheapest and most expensive times. Use for "prices today/tomorrow?" or to
         see when electricity is cheap. Tomorrow's prices appear around 14:00 Finnish time."""
+        contract, contract_from = contract_for(margin_c_per_kwh, transfer_c_per_kwh)
         target = finnish_date(clock()) + timedelta(days=1 if day == "tomorrow" else 0)
-        periods = [p for p in household_prices() if finnish_date(p.start) == target]
+        periods = [p for p in household_prices(contract) if finnish_date(p.start) == target]
         if not periods:
             if day == "tomorrow":
                 raise ToolError(
@@ -153,7 +206,7 @@ def build_server(
                 cheapest_start=cheapest.start,
                 most_expensive_start=dearest.start,
             ),
-            assumptions=assumptions(target),
+            assumptions=assumptions(target, contract, contract_from),
         )
 
     @server.tool(annotations=_READ_ONLY)
@@ -184,13 +237,16 @@ def build_server(
             float | None,
             Field(ge=0, description="Energy it uses in total, to estimate the cost in euros"),
         ] = None,
+        margin_c_per_kwh: MarginParam = None,
+        transfer_c_per_kwh: TransferParam = None,
     ) -> CheapestTime:
         """Find the cheapest continuous time to run something (sauna, laundry, dishwasher, EV
         charging) for a given duration, between an earliest start and a deadline. Also shows
         what starting right now would cost instead. Prices are known until the end of today,
         or tomorrow after about 14:00 Finnish time."""
+        contract, contract_from = contract_for(margin_c_per_kwh, transfer_c_per_kwh)
         now = clock()
-        prices = household_prices()
+        prices = household_prices(contract)
         duration = timedelta(minutes=duration_minutes)
         earliest = max(_finnish(earliest_start), now) if earliest_start else now
         deadline = _finnish(finish_by) if finish_by else prices[-1].end
@@ -224,7 +280,7 @@ def build_server(
             average_c_per_kwh=_r(best.average_c_per_kwh),
             cost_eur=None if best.cost_eur is None else _r(best.cost_eur),
             if_started_now=_start_now(prices, now, duration, kwh, best),
-            assumptions=assumptions(finnish_date(best.start)),
+            assumptions=assumptions(finnish_date(best.start), contract, contract_from),
         )
 
     return server
@@ -236,6 +292,11 @@ def build_server(
 def _r(value: Decimal) -> float:
     """Round to 2 decimals for the answer (exact Decimals stay inside the core)."""
     return float(value.quantize(_CENT, rounding=ROUND_HALF_UP))
+
+
+def _dec(value: float) -> Decimal:
+    """A number from the AI (JSON float) as an exact Decimal: 0.39 -> Decimal("0.39")."""
+    return Decimal(str(value))
 
 
 def _mean(values: Sequence[Decimal]) -> Decimal:
