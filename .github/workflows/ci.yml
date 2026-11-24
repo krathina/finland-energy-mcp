@@ -1,0 +1,39 @@
+# Runs on every push and pull request: lint, format, types and the offline tests.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read # the workflow can only read the repository
+
+concurrency: # a newer push to the same branch cancels the older run
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10 # installs uv; uv installs the Python version in .python-version
+        with:
+          enable-cache: true
+
+      - name: Install exact locked dependencies
+        run: uv sync --locked # fails if uv.lock is out of date with pyproject.toml
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format
+        run: uv run ruff format --check .
+
+      - name: Types
+        run: uv run mypy
+
+      - name: Tests (offline)
+        run: uv run pytest
