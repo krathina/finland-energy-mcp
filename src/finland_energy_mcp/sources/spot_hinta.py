@@ -12,11 +12,11 @@ import json
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from importlib.metadata import version
 from typing import Self
 
 import httpx
 
+from finland_energy_mcp.about import user_agent
 from finland_energy_mcp.core.models import PricePoint, PriceSeries
 from finland_energy_mcp.sources.errors import (
     PriceSourceError,
@@ -131,7 +131,7 @@ class SpotHintaSource:
     def _get(self, path: str) -> str:
         try:
             # Set per request, so it is sent even with a client passed in by the caller.
-            response = self._client.get(path, headers={"User-Agent": _user_agent()})
+            response = self._client.get(path, headers={"User-Agent": user_agent()})
         except httpx.TimeoutException as error:
             raise SourceUnavailableError(f"{self.name} timed out: {error}") from error
         except httpx.TransportError as error:
@@ -156,11 +156,3 @@ class SpotHintaSource:
 
     def __exit__(self, *exc_info: object) -> None:
         self.close()
-
-
-_PROJECT_URL = "https://github.com/krathina/finland-energy-mcp"
-
-
-def _user_agent() -> str:
-    """Tell the API owner who is calling: project, version and home page (no personal data)."""
-    return f"finland-energy-mcp/{version('finland-energy-mcp')} (+{_PROJECT_URL})"

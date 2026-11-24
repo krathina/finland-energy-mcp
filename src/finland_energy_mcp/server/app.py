@@ -15,6 +15,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
+from finland_energy_mcp import about
 from finland_energy_mcp.core.planner import Window, cheapest_window
 from finland_energy_mcp.core.pricing import (
     FINNISH_TIME,
@@ -59,7 +60,12 @@ def build_server(
     clock: Callable[[], datetime] = _now_utc,
 ) -> MCPServer:
     """Create the MCP server with its tools."""
-    server = MCPServer("finland-energy", instructions=INSTRUCTIONS)
+    server = MCPServer(
+        about.name(),
+        version=about.version(),
+        website_url=about.home_page(),
+        instructions=INSTRUCTIONS,
+    )
 
     def household_prices() -> list[PriceBreakdown]:
         try:
