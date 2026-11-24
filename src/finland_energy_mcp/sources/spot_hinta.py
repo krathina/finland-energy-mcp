@@ -94,12 +94,13 @@ class SpotHintaSource:
     closed. A client passed in by the caller is left for the caller to close.
     """
 
-    BASE_URL = "https://api.spot-hinta.fi"
+    DEFAULT_BASE_URL = "https://api.spot-hinta.fi"
     _RATE_LIMIT = timedelta(minutes=1)  # documented: one request per minute per IP
 
     def __init__(
         self,
         *,
+        base_url: str = DEFAULT_BASE_URL,
         client: httpx.Client | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         cache_for: timedelta = timedelta(minutes=15),
@@ -108,7 +109,7 @@ class SpotHintaSource:
         if cache_for < self._RATE_LIMIT:
             raise ValueError("cache_for must be at least one minute (the source's rate limit)")
         self._owns_client = client is None
-        self._client = client or httpx.Client(base_url=self.BASE_URL, timeout=timeout_seconds)
+        self._client = client or httpx.Client(base_url=base_url, timeout=timeout_seconds)
         self._clock = clock
         self._cache_for = cache_for
         self._cached: tuple[datetime, PriceSeries] | None = None

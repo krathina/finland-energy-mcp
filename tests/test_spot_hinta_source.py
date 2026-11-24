@@ -45,7 +45,7 @@ class FakeServer:
 
 def source_for(server: FakeServer, clock: FakeClock | None = None) -> SpotHintaSource:
     client = httpx.Client(
-        transport=httpx.MockTransport(server.handle), base_url=SpotHintaSource.BASE_URL
+        transport=httpx.MockTransport(server.handle), base_url=SpotHintaSource.DEFAULT_BASE_URL
     )
     return SpotHintaSource(client=client, clock=clock or FakeClock())
 
