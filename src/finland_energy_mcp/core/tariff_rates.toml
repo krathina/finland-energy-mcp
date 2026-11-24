@@ -1,0 +1,31 @@
+# Finnish tax rates used by the price calculation.
+#
+# Each table lists rates oldest first. A rate applies from its valid_from date until the next
+# entry's valid_from. Dates before the first entry are refused, not guessed.
+#
+# To update: add a new entry at the end (keep the old ones: past dates still need them), with the
+# source you checked, then run the tests. Numbers are read as exact decimals.
+
+# General VAT rate, as a fraction (0.255 = 25.5 %).
+[[vat]]
+valid_from = 2013-01-01
+rate = 0.24
+source = "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/vat/rates-of-vat/"
+
+[[vat]]
+valid_from = 2024-09-01
+rate = 0.255
+source = "https://www.vero.fi/en/businesses-and-corporations/taxes-and-charges/vat/rates-of-vat/"
+
+# Electricity tax, class I (households), in cents per kWh WITHOUT VAT.
+# The first entry is the oldest rate verified for this project (checked 2026-11-24), not the
+# start of the tax.
+[[electricity_tax_class_1]]
+valid_from = 2025-01-01
+c_per_kwh_excl_vat = 2.253  # 2.24 energy tax + 0.013 strategic stockpile fee
+source = "https://vero.fi/en/businesses-and-corporations/taxes-and-charges/excise-taxation/sahkovero/Tax-rates-on-electricity-and-certain-fuels/"
+
+[[electricity_tax_class_1]]
+valid_from = 2026-04-01
+c_per_kwh_excl_vat = 2.325  # 2.24 energy tax + 0.085 strategic stockpile fee
+source = "https://vero.fi/en/businesses-and-corporations/taxes-and-charges/excise-taxation/sahkovero/Tax-rates-on-electricity-and-certain-fuels/"
