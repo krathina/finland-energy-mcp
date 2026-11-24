@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "MCP server for Finnish electricity prices: what a household really pays, and when to use power"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "httpx>=0.28.1",  # HTTP client for the price APIs (like java.net.http.HttpClient)
+]
 
 [project.scripts]
 finland-energy-mcp = "finland_energy_mcp:main"
@@ -24,7 +26,10 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]          # where tests live (like src/test/java)
-addopts = "-ra --strict-markers"  # summary of skipped/failed tests; reject unknown markers
+addopts = "-ra --strict-markers -m 'not live'"  # summary; reject unknown markers; skip live
+markers = [
+    "live: calls a real external API (run on purpose: uv run pytest -m live)",
+]
 
 [tool.ruff]
 line-length = 100
