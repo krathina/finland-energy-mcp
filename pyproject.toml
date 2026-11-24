@@ -1,0 +1,41 @@
+[project]
+name = "finland-energy-mcp"
+version = "0.1.0"
+description = "MCP server for Finnish electricity prices: what a household really pays, and when to use power"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+finland-energy-mcp = "finland_energy_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+]
+
+# --- Tool settings (each tool reads its own [tool.<name>] section) ---
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]          # where tests live (like src/test/java)
+addopts = "-ra --strict-markers"  # summary of skipped/failed tests; reject unknown markers
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W: style errors, F: real bugs (unused imports, undefined names), I: import order,
+# B: common bug patterns, UP: modern Python syntax, SIM: simplifications
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+strict = true                  # every function needs type hints; no silent "Any"
+python_version = "3.12"
+files = ["src", "tests"]
