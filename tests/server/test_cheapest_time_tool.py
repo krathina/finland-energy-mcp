@@ -94,7 +94,7 @@ async def test_respects_earliest_start_and_finish_by_in_finnish_time(client: Cli
 
 async def test_gives_the_cost_when_energy_is_known(client: Client) -> None:
     out = ok(await call(client, {"duration_minutes": 120, "energy_kwh": 9}))
-    assert out["cost_eur"] == pytest.approx(out["average_c_per_kwh"] * 9 / 100, abs=0.01)
+    assert out["cost_eur"] == pytest.approx(out["average_total_c_per_kwh"] * 9 / 100, abs=0.01)
 
 
 async def test_leaves_cost_out_when_energy_is_unknown(client: Client) -> None:
@@ -106,7 +106,7 @@ async def test_compares_with_starting_now(client: Client) -> None:
     out = ok(await call(client, {"duration_minutes": 120, "energy_kwh": 9}))
     now = out["if_started_now"]
     assert datetime.fromisoformat(now["start"]) == datetime(2026, 11, 24, 18, 0, tzinfo=HELSINKI)
-    assert now["average_c_per_kwh"] >= out["average_c_per_kwh"]
+    assert now["average_total_c_per_kwh"] >= out["average_total_c_per_kwh"]
     assert now["extra_cost_eur"] == pytest.approx(now["cost_eur"] - out["cost_eur"], abs=0.01)
     assert now["extra_cost_eur"] >= 0
 

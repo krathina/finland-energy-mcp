@@ -47,7 +47,7 @@ async def test_price_now_gives_the_household_price_with_its_parts(client: Client
     assert datetime.fromisoformat(out["period_start"]) == datetime(
         2026, 11, 24, 18, 0, tzinfo=HELSINKI
     )
-    assert out["price_c_per_kwh"] == {
+    assert out["breakdown_c_per_kwh"] == {
         "spot": 15.75,  # 125.53 EUR/MWh = 12.553 c, x 1.255 VAT
         "margin": 0.49,
         "transfer": 3.5,
@@ -58,8 +58,8 @@ async def test_price_now_gives_the_household_price_with_its_parts(client: Client
 
 async def test_price_now_puts_the_price_in_context_of_the_day(client: Client) -> None:
     out = await call(client, "get_price_now")
-    day = out["today_c_per_kwh"]
-    assert day["min"] < out["price_c_per_kwh"]["total"] < day["max"]
+    day = out["today_total_c_per_kwh"]
+    assert day["min"] < out["breakdown_c_per_kwh"]["total"] < day["max"]
 
 
 async def test_every_answer_states_its_assumptions(client: Client) -> None:
@@ -99,8 +99,8 @@ async def test_prices_tomorrow(client: Client) -> None:
 async def test_prices_summary_points_to_cheapest_and_most_expensive(client: Client) -> None:
     out = await call(client, "get_prices")
     totals = [p["total_c_per_kwh"] for p in out["periods"]]
-    assert out["summary"]["min_c_per_kwh"] == min(totals)
-    assert out["summary"]["max_c_per_kwh"] == max(totals)
+    assert out["summary"]["min_total_c_per_kwh"] == min(totals)
+    assert out["summary"]["max_total_c_per_kwh"] == max(totals)
     cheapest = next(p for p in out["periods"] if p["total_c_per_kwh"] == min(totals))
     assert out["summary"]["cheapest_start"] == cheapest["start"]
 

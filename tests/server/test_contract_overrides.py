@@ -48,8 +48,8 @@ async def test_without_values_the_example_defaults_are_used_and_said_so(
 
 
 async def test_own_contract_changes_the_total_by_exactly_the_difference(client: Client) -> None:
-    default = ok(await call(client, "get_price_now"))["price_c_per_kwh"]
-    mine = ok(await call(client, "get_price_now", MINE))["price_c_per_kwh"]
+    default = ok(await call(client, "get_price_now"))["breakdown_c_per_kwh"]
+    mine = ok(await call(client, "get_price_now", MINE))["breakdown_c_per_kwh"]
     # 0.39 + 4.1 instead of 0.49 + 3.5: +0.5 c/kWh; spot and tax don't change.
     assert mine["spot"] == default["spot"]
     assert mine["electricity_tax"] == default["electricity_tax"]

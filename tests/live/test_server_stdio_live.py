@@ -22,4 +22,4 @@ async def test_real_server_over_stdio_answers_price_now() -> None:
     assert not result.is_error, result.content
     assert isinstance(result.structured_content, dict)
     assert result.structured_content["assumptions"]["source"] == "spot-hinta.fi"
-    assert result.structured_content["price_c_per_kwh"]["total"] > 0
+    assert result.structured_content["breakdown_c_per_kwh"]["total"] > 0

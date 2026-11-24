@@ -153,14 +153,14 @@ def build_server(
         return PriceNow(
             period_start=_local(current.start),
             period_end=_local(current.end),
-            price_c_per_kwh=PriceParts(
+            breakdown_c_per_kwh=PriceParts(
                 spot=_r(current.spot_c_per_kwh),
                 margin=_r(current.margin_c_per_kwh),
                 transfer=_r(current.transfer_c_per_kwh),
                 electricity_tax=_r(current.electricity_tax_c_per_kwh),
                 total=_r(current.total_c_per_kwh),
             ),
-            today_c_per_kwh=DayRange(
+            today_total_c_per_kwh=DayRange(
                 min=_r(min(totals)), max=_r(max(totals)), average=_r(_mean(totals))
             ),
             assumptions=assumptions(finnish_date(now), contract, contract_from),
@@ -200,9 +200,9 @@ def build_server(
             resolution=resolution,
             periods=rows,
             summary=DaySummary(
-                min_c_per_kwh=cheapest.total_c_per_kwh,
-                max_c_per_kwh=dearest.total_c_per_kwh,
-                average_c_per_kwh=_r(_mean([p.total_c_per_kwh for p in periods])),
+                min_total_c_per_kwh=cheapest.total_c_per_kwh,
+                max_total_c_per_kwh=dearest.total_c_per_kwh,
+                average_total_c_per_kwh=_r(_mean([p.total_c_per_kwh for p in periods])),
                 cheapest_start=cheapest.start,
                 most_expensive_start=dearest.start,
             ),
@@ -277,7 +277,7 @@ def build_server(
             start=_local(best.start),
             end=_local(best.end),
             duration_minutes=duration_minutes,
-            average_c_per_kwh=_r(best.average_c_per_kwh),
+            average_total_c_per_kwh=_r(best.average_c_per_kwh),
             cost_eur=None if best.cost_eur is None else _r(best.cost_eur),
             if_started_now=_start_now(prices, now, duration, kwh, best),
             assumptions=assumptions(finnish_date(best.start), contract, contract_from),
@@ -363,7 +363,7 @@ def _start_now(
     )
     return StartNow(
         start=_local(now_window.start),
-        average_c_per_kwh=_r(now_window.average_c_per_kwh),
+        average_total_c_per_kwh=_r(now_window.average_c_per_kwh),
         cost_eur=None if now_window.cost_eur is None else _r(now_window.cost_eur),
         extra_cost_eur=None if extra is None else _r(extra),
     )

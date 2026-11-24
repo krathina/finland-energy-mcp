@@ -37,7 +37,7 @@ class PriceParts(BaseModel):
 
 
 class DayRange(BaseModel):
-    """Lowest, highest and average household price of a day, c/kWh."""
+    """Lowest, highest and average TOTAL household price of a day, c/kWh incl. VAT."""
 
     min: float
     max: float
@@ -49,8 +49,11 @@ class PriceNow(BaseModel):
 
     period_start: datetime
     period_end: datetime
-    price_c_per_kwh: PriceParts
-    today_c_per_kwh: DayRange
+    breakdown_c_per_kwh: PriceParts = Field(description="This period's price split into parts")
+    today_total_c_per_kwh: DayRange = Field(
+        description="Today's lowest, average and highest TOTAL price (same basis as "
+        "breakdown_c_per_kwh.total, not the spot part)"
+    )
     assumptions: Assumptions
 
 
@@ -66,11 +69,11 @@ class PeriodPrice(BaseModel):
 class DaySummary(BaseModel):
     """Quick facts about a day's prices."""
 
-    min_c_per_kwh: float
-    max_c_per_kwh: float
-    average_c_per_kwh: float
-    cheapest_start: datetime
-    most_expensive_start: datetime
+    min_total_c_per_kwh: float
+    max_total_c_per_kwh: float
+    average_total_c_per_kwh: float
+    cheapest_start: datetime = Field(description="Start of the period with the lowest total")
+    most_expensive_start: datetime = Field(description="Start of the period with the highest total")
 
 
 class DayPrices(BaseModel):
@@ -87,7 +90,7 @@ class StartNow(BaseModel):
     """The same job started in the current period, for comparison."""
 
     start: datetime
-    average_c_per_kwh: float
+    average_total_c_per_kwh: float
     cost_eur: float | None
     extra_cost_eur: float | None = Field(
         description="How much more starting now costs than the cheapest time"
@@ -100,7 +103,7 @@ class CheapestTime(BaseModel):
     start: datetime
     end: datetime
     duration_minutes: int
-    average_c_per_kwh: float
+    average_total_c_per_kwh: float = Field(description="Average total price over the window")
     cost_eur: float | None = Field(description="Only when energy_kwh was given")
     if_started_now: StartNow | None = Field(
         description="Starting right away instead; missing if prices don't reach that far"
