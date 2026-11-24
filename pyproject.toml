@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",  # HTTP client for the price APIs (like java.net.http.HttpClient)
+    "mcp>=2.3",  # official Model Context Protocol SDK (server + in-memory test client)
 ]
 
 [project.scripts]

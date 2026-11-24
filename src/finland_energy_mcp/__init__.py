@@ -1,2 +1,5 @@
-def main() -> None:
-    print("Hello from finland-energy-mcp!")
+"""Finnish electricity prices for households: what you really pay, and when to use power."""
+
+from finland_energy_mcp.server import main
+
+__all__ = ["main"]
