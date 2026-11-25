@@ -127,8 +127,7 @@ CI runs all of it on every push, and the live contract tests nightly.
 
 ## Limitations
 
-- Only today's and tomorrow's prices (tomorrow's appear around 14:00 Finnish time). Historical prices
-  (ENTSO-E) and a fixed-vs-spot tool are planned.
+- Only today's and tomorrow's prices (tomorrow's appear around 14:00 Finnish time).
 - Margin and transfer fee default to example values until the user gives theirs.
 - Local (stdio) MCP only for now; a remote (HTTP) mode is planned.
 - VAT on negative spot prices is off by default (common Finnish practice; contracts differ).
