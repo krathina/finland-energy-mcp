@@ -77,7 +77,7 @@ the file lives (VS Code uses `servers` instead of `mcpServers`):
   "mcpServers": {
     "finland-energy": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/krathina/finland-energy-mcp", "finland-energy-mcp"]
+      "args": ["finland-energy-mcp"]
     }
   }
 }
@@ -86,11 +86,12 @@ the file lives (VS Code uses `servers` instead of `mcpServers`):
 With Claude Code it's one command:
 
 ```sh
-claude mcp add finland-energy -s user -- uvx --from git+https://github.com/krathina/finland-energy-mcp finland-energy-mcp
+claude mcp add finland-energy -s user -- uvx finland-energy-mcp
 ```
 
 Restart the assistant, check that `finland-energy` shows 3 tools, and ask away. `uvx` keeps a cached
-copy; add `--refresh` once to pick up a newer version.
+copy; use `finland-energy-mcp@latest` instead to always get the newest version from
+[PyPI](https://pypi.org/project/finland-energy-mcp/).
 
 The server runs locally over stdio. Browser-based assistants that only accept remote MCP servers
 (over HTTP) are not supported yet.
@@ -98,7 +99,7 @@ The server runs locally over stdio. Browser-based assistants that only accept re
 ## Configuration
 
 Optional environment variables, all prefixed `FINLAND_ENERGY_` (full list with defaults in
-[`.env.example`](.env.example)): default margin and transfer fee, VAT on negative prices, the price
+[`.env.example`](https://github.com/krathina/finland-energy-mcp/blob/main/.env.example)): default margin and transfer fee, VAT on negative prices, the price
 API's address, request timeout and cache time. Users can also simply tell the assistant their margin
 and transfer fee in the conversation; no configuration needed.
 
@@ -124,7 +125,7 @@ CI runs all of it on every push, and the live contract tests nightly.
   periods), which gets them from the [ENTSO-E Transparency Platform](https://transparency.entsoe.eu).
   Its documented limit is one request per minute; the server caches for 15 minutes.
 - VAT and electricity tax: [Finnish Tax Administration](https://www.vero.fi), with links per rate in
-  [`tariff_rates.toml`](src/finland_energy_mcp/core/tariff_rates.toml).
+  [`tariff_rates.toml`](https://github.com/krathina/finland-energy-mcp/blob/main/src/finland_energy_mcp/core/tariff_rates.toml).
 
 ## Limitations
 
@@ -137,4 +138,4 @@ CI runs all of it on every push, and the live contract tests nightly.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/krathina/finland-energy-mcp/blob/main/LICENSE)
