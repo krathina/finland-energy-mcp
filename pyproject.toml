@@ -60,4 +60,4 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM"]
 [tool.mypy]
 strict = true                  # every function needs type hints; no silent "Any"
 python_version = "3.12"
-files = ["src", "tests"]
+files = ["src", "tests", "evals"]
