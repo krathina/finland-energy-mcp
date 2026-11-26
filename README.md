@@ -96,6 +96,13 @@ copy; use `finland-energy-mcp@latest` instead to always get the newest version f
 The server runs locally over stdio. Browser-based assistants that only accept remote MCP servers
 (over HTTP) are not supported yet.
 
+## Skill (optional)
+
+[`skills/finland-electricity/`](https://github.com/krathina/finland-energy-mcp/tree/main/skills/finland-electricity)
+teaches your assistant to use these tools well: turning "heat the sauna" or "charge the car" into
+the right inputs, finding margin and transfer fee on Finnish bills, and stating its assumptions.
+It uses the open `SKILL.md` format. For Claude Code, copy the folder into `~/.claude/skills/`.
+
 ## Configuration
 
 Optional environment variables, all prefixed `FINLAND_ENERGY_` (full list with defaults in
