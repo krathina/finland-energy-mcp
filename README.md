@@ -121,7 +121,8 @@ CI runs all of it on every push, and the live contract tests nightly.
 ## Data and sources
 
 - Market prices: [spot-hinta.fi](https://spot-hinta.fi) free API (Nordic day-ahead prices, 15-minute
-  periods). Its documented limit is one request per minute; the server caches for 15 minutes.
+  periods), which gets them from the [ENTSO-E Transparency Platform](https://transparency.entsoe.eu).
+  Its documented limit is one request per minute; the server caches for 15 minutes.
 - VAT and electricity tax: [Finnish Tax Administration](https://www.vero.fi), with links per rate in
   [`tariff_rates.toml`](src/finland_energy_mcp/core/tariff_rates.toml).
 
@@ -132,6 +133,7 @@ CI runs all of it on every push, and the live contract tests nightly.
 - Local (stdio) MCP only for now; a remote (HTTP) mode is planned.
 - VAT on negative spot prices is off by default (common Finnish practice; contracts differ).
 - Estimates for information, not financial advice.
+- Not affiliated with or endorsed by spot-hinta.fi or ENTSO-E.
 
 ## License
 
