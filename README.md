@@ -102,6 +102,7 @@ The server runs locally over stdio. Browser-based assistants that only accept re
 teaches your assistant to use these tools well: turning "heat the sauna" or "charge the car" into
 the right inputs, finding margin and transfer fee on Finnish bills, and stating its assumptions.
 It uses the open `SKILL.md` format. For Claude Code, copy the folder into `~/.claude/skills/`.
+Tested with 7 scenarios × 3 runs against a frozen price server (`evals/run_skill_evals.py`).
 
 ## Configuration
 

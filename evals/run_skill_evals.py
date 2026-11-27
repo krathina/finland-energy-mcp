@@ -20,7 +20,7 @@ import sys
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -177,6 +177,48 @@ def answer_mentions(pattern: str) -> Check:
     return check
 
 
+def answer_in_finnish() -> Check:
+    """Rough language test: common Finnish words clearly outnumber common English ones."""
+
+    def check(t: Transcript) -> str | None:
+        words = re.findall(r"[a-zäö]+", t.answers[-1].lower()) if t.answers else []
+        fi = sum(
+            w in {"on", "ja", "klo", "kun", "että", "noin", "kannattaa", "sauna"} for w in words
+        )
+        en = sum(w in {"the", "and", "is", "you", "your", "at", "it"} for w in words)
+        return None if fi >= 3 and fi > 2 * en else f"Finnish words {fi}, English words {en}"
+
+    return check
+
+
+def no_unsourced_prices() -> Check:
+    """With no tool calls, the answer must not contain any c/kWh price (it would be invented)."""
+
+    def check(t: Transcript) -> str | None:
+        if t.calls:
+            return None  # numbers may come from today's prices
+        price = re.search(r"\d+[.,]?\d*\s*(c|snt|cents?)\s*/\s*kWh", "\n".join(t.answers))
+        return f"price without a tool call: {price.group(0)!r}" if price else None
+
+    return check
+
+
+def any_call(tool: str, matches: Callable[[dict[str, Any]], bool], wanted: str) -> Check:
+    def check(t: Transcript) -> str | None:
+        found = any(c.name == tool and matches(c.input) for c in t.calls)
+        return None if found else f"no {tool} call with {wanted}"
+
+    return check
+
+
+def is_at(raw: object, days_from_today: int, hour: int) -> bool:
+    """True if `raw` is the given hour (Finnish time), days from today."""
+    if not isinstance(raw, str):
+        return False
+    expected = datetime.combine(today() + timedelta(days=days_from_today), time(hour), HELSINKI)
+    return finnish(raw) == expected
+
+
 def today() -> date:
     return datetime.now(HELSINKI).date()
 
@@ -241,6 +283,64 @@ SCENARIOS = [
             "margin 0.39 in every call": every_call_has("margin_c_per_kwh", 0.39),
             "transfer 4.1 in every call": every_call_has("transfer_c_per_kwh", 4.1),
             "doesn't call them example values": last_answer_lacks(r"example values?"),
+        },
+    ),
+    # --- things only the skill explains (not the server's own instructions) ---
+    Scenario(
+        "fixed",
+        [
+            "I have a fixed-price contract (kiinteä hinta), 8.5 c/kWh. "
+            "When should I run the dishwasher today?"
+        ],
+        {
+            # No "uses the skill" check: models usually know this without the skill, and the
+            # answer is what counts.
+            "says timing doesn't change the cost": answer_mentions(
+                r"doesn.t matter|does not matter|no difference|(doesn.t|does not|won.t) change|"
+                r"same price|any ?time|whenever"
+            ),
+        },
+    ),
+    Scenario(
+        "finnish",
+        ["Milloin kannattaa lämmittää sauna tänä iltana? Haluamme saunoa ennen kymmentä."],
+        {
+            "uses the skill": skill_used(),
+            "answers in Finnish": answer_in_finnish(),
+            "2 hours (skill's sauna row)": arg_between(
+                "find_cheapest_time", "duration_minutes", 120, 120
+            ),
+            "finishes by 22:00 today": finishes_at("find_cheapest_time", 0, 22),
+        },
+    ),
+    Scenario(
+        "past",
+        ["What did electricity cost last Tuesday?"],
+        {
+            "uses the skill": skill_used(),
+            "says past prices aren't available": answer_mentions(
+                r"not available|isn.t available|can.t|cannot|don.t have|only (has|have|covers?|"
+                r"gives?|knows?|shows?)|only today|no access"
+            ),
+            "no invented prices": no_unsourced_prices(),
+        },
+    ),
+    Scenario(
+        "night_transfer",
+        [
+            "My transfer fee is night transfer (yösiirto): 2.5 c/kWh from 22 to 07 and 4.5 c/kWh "
+            "in the daytime. When should I charge 20 kWh into the car with 11 kW before 7 tomorrow?"
+        ],
+        {
+            "uses the skill": skill_used(),
+            # It may also check the evening at the daytime rate to compare, so look for any
+            # call that plans the night window, not just the last call.
+            "plans the night at 2.5, ending 07:00": any_call(
+                "find_cheapest_time",
+                lambda i: i.get("transfer_c_per_kwh") == 2.5 and is_at(i.get("finish_by"), 1, 7),
+                "transfer 2.5 and finish_by 07:00 tomorrow",
+            ),
+            "mentions the night rate": answer_mentions(r"night|yö|2[.,]5"),
         },
     ),
 ]
